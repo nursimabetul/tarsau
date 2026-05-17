@@ -3,12 +3,24 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <fcntl.h>
+#include <dirent.h>
 
 #define MAX_DOSYA_SAYISI 32
 #define MAX_DOSYA_BOYUTU (200 * 1024 * 1024)
 
 int ascii_kontrol(const char *dosya_adi);
 long dosya_boyutu_al(const char *dosya_adi);
+int dosya_izin_oku(const char *dosya_adi);
+void arsiv_olustur(int dosya_sayisi, char *dosyalar[], char *arsiv_adi);
+
+typedef struct
+{
+    char dosya_adi[256];
+    long boyut;
+    int izin;
+} DosyaBilgisi;
+
 
 int main(int argc, char *argv[])
 {
@@ -93,7 +105,7 @@ int main(int argc, char *argv[])
             return 1;
         }
         
-        
+        arsiv_olustur(dosya_sayisi, dosyalar, arsiv_dosya);
         
     }
 
@@ -158,4 +170,78 @@ long dosya_boyutu_al(const char *dosya_adi)
     }
 
     return st.st_size;
+}
+
+
+int dosya_izin_oku(const char *dosya_adi)
+{
+    struct stat st;
+
+    if(stat(dosya_adi, &st) != 0)
+    {
+        return -1;
+    }
+
+    return st.st_mode & 0777;
+}
+
+
+void arsiv_olustur(int dosya_sayisi, char *dosyalar[], char *arsiv_adi)
+{
+    FILE *arsiv = fopen(arsiv_adi, "wb");
+
+    if(arsiv == NULL)
+    {
+        printf("Arsiv dosyasi olusturulamadi!\n");
+        return;
+    }
+
+    char metadata[4096] = "";
+
+    for(int i = 0; i < dosya_sayisi; i++)
+    {
+        long boyut = dosya_boyutu_al(dosyalar[i]);
+        int izin = dosya_izin_oku(dosyalar[i]);
+
+        char temp[512];
+
+        sprintf(
+            temp,
+            "|%s,%o,%ld|",
+            dosyalar[i],
+            izin,
+            boyut
+        );
+
+        strcat(metadata, temp);
+    }
+
+    long metadata_boyut = strlen(metadata);
+
+    fprintf(arsiv, "%010ld", metadata_boyut);
+
+    fwrite(metadata, 1, metadata_boyut, arsiv);
+
+    for(int i = 0; i < dosya_sayisi; i++)
+    {
+        FILE *fp = fopen(dosyalar[i], "rb");
+
+        if(fp == NULL)
+        {
+            continue;
+        }
+
+        int ch;
+
+        while((ch = fgetc(fp)) != EOF)
+        {
+            fputc(ch, arsiv);
+        }
+
+        fclose(fp);
+    }
+
+    fclose(arsiv);
+
+    printf("Dosyalar birlestirildi.\n");
 }
