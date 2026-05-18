@@ -19,6 +19,7 @@ typedef struct
     char dosya_adi[256];
     long boyut;
     int izin;
+    long dosya_konumu;
 } DosyaBilgisi;
 
 
@@ -203,24 +204,34 @@ void arsiv_olustur(int dosya_sayisi, char *dosyalar[], char *arsiv_adi)
         return;
     }
 
+    DosyaBilgisi dosya_bilgisi[MAX_DOSYA_SAYISI];
     char metadata[4096] = "";
+    
+    long konum = 0;
+    
 
     for(int i = 0; i < dosya_sayisi; i++)
     {
         long boyut = dosya_boyutu_al(dosyalar[i]);
         int izin = dosya_izin_oku(dosyalar[i]);
+        
+        
+        strcpy(dosya_bilgisi[i].dosya_adi, dosyalar[i]);
+        dosya_bilgisi[i].boyut = boyut;
+        dosya_bilgisi[i].izin = izin;
+        dosya_bilgisi[i].dosya_konumu = konum;
+        konum += boyut;
 
         char temp[512];
 
-        sprintf(
-            temp,
-            "|%s,%o,%ld|",
-            dosyalar[i],
-            izin,
-            boyut
-        );
+        sprintf(temp,
+                "|%s,%o,%ld,%ld|",
+                dosya_bilgisi[i].dosya_adi,
+                dosya_bilgisi[i].izin,
+                dosya_bilgisi[i].boyut,
+                dosya_bilgisi[i].dosya_konumu);
 
-        strcat(metadata, temp);
+        strncat(metadata, temp, sizeof(metadata) - strlen(metadata) - 1);
     }
 
     long metadata_boyut = strlen(metadata);
@@ -252,4 +263,10 @@ void arsiv_olustur(int dosya_sayisi, char *dosyalar[], char *arsiv_adi)
     fclose(arsiv);
 
     printf("Dosyalar birlestirildi.\n");
+}
+
+
+int dosya_var_mi(const char *dosya_adi)
+{
+    return access(dosya_adi, F_OK) == 0;
 }
