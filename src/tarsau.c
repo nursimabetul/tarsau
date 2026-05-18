@@ -59,9 +59,16 @@ int main(int argc, char *argv[])
                 break;
             }
 
+           if(dosya_sayisi >= MAX_DOSYA_SAYISI)
+            {
+                printf("En fazla 32 dosya arsivlenebilir...\n");
+                return 1;
+            }
             dosyalar[dosya_sayisi] = argv[i];
             dosya_sayisi++;
         }
+        
+ 
 
         printf("Birlestirilecek Dosyalar:\n");
         long toplam_boyut = 0;
@@ -228,6 +235,7 @@ void arsiv_olustur(int dosya_sayisi, char *dosyalar[], char *arsiv_adi)
 
         if(fp == NULL)
         {
+            printf("%s acilamadi!\n", dosyalar[i]);
             continue;
         }
 
