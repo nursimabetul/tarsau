@@ -13,6 +13,7 @@ int ascii_kontrol(const char *dosya_adi);
 long dosya_boyutu_al(const char *dosya_adi);
 int dosya_izin_oku(const char *dosya_adi);
 void arsiv_olustur(int dosya_sayisi, char *dosyalar[], char *arsiv_adi);
+void arsiv_ac(const char *arsiv_adi, const char *hedef_dizin);
 
 typedef struct
 {
@@ -122,6 +123,16 @@ int main(int argc, char *argv[])
     {
         printf("Acma Islemi yapiliyor.\n");
 
+
+        if(argc < 3)
+        {
+            printf("Arsiv dosyasi eksik.\n");
+            return 1;
+        }
+        
+        char *arsiv_dosya = argv[2];
+        char *hedef_dizin = NULL;
+
         if(argc >= 3)
         {
             printf("Arsiv dosyasi: %s\n", argv[2]);
@@ -129,7 +140,12 @@ int main(int argc, char *argv[])
 
         if(argc >= 4)
         {
-            printf("Hedef dizin: %s\n", argv[3]);
+            hedef_dizin = argv[3];
+            printf("Hedef dizin: %s\n", hedef_dizin);
+        }
+        else
+        {
+            printf("Hedef dizin girilmesi, mevcut dizine aciliyor...\n");
         }
     }
 
@@ -269,4 +285,137 @@ void arsiv_olustur(int dosya_sayisi, char *dosyalar[], char *arsiv_adi)
 int dosya_var_mi(const char *dosya_adi)
 {
     return access(dosya_adi, F_OK) == 0;
+}
+
+void arsiv_ac(const char *arsiv_adi, const char *hedef_dizin)
+{
+    FILE *arsiv = fopen(arsiv_adi, "rb");
+
+    // kontrol edilecek*********************
+    if(arsiv == NULL)
+    {
+        printf("Arsiv dosyasi uygunsuz veya bozuk!\n");
+        return;
+    }
+
+    // .sau uzanti kontrolu
+    char *uzanti = strrchr(arsiv_adi, '.');
+
+    if(uzanti == NULL || strcmp(uzanti, ".sau") != 0)
+    {
+        printf("Arsiv dosyasi uygunsuz veya bozuk!\n");
+        fclose(arsiv);
+        return;
+    }
+
+    // metadata boyutu oku
+    char boyut_str[11];
+
+    if(fread(boyut_str, 1, 10, arsiv) != 10)
+    {
+        printf("Arsiv dosyasi uygunsuz veya bozuk!\n");
+        fclose(arsiv);
+        return;
+    }
+
+    boyut_str[10] = '\0';
+
+    long metadata_boyut = atol(boyut_str);
+
+    if(metadata_boyut <= 0)
+    {
+        printf("Arsiv dosyasi uygunsuz veya bozuk!\n");
+        fclose(arsiv);
+        return;
+    }
+
+    // metadata oku
+    char *metadata = malloc(metadata_boyut + 1);
+
+    if(metadata == NULL)
+    {
+        fclose(arsiv);
+        return;
+    }
+
+    fread(metadata, 1, metadata_boyut, arsiv);
+
+    metadata[metadata_boyut] = '\0';
+
+    // dizin olustur
+    if(hedef_dizin != NULL)
+    {
+        mkdir(hedef_dizin, 0755);
+    }
+
+    // metadata ayristirma
+    char *parca = strtok(metadata, "|");
+
+    while(parca != NULL)
+    {
+        char dosya_adi[256];
+        int izin;
+        long boyut;
+        long konum;
+
+        if(sscanf(parca,
+                  "%255[^,],%o,%ld,%ld",
+                  dosya_adi,
+                  &izin,
+                  &boyut,
+                  &konum) != 4)
+        {
+            printf("Arsiv dosyasi uygunsuz veya bozuk!\n");
+
+            free(metadata);
+            fclose(arsiv);
+            return;
+        }
+
+        char yol[512];
+
+        if(hedef_dizin != NULL)
+        {
+            sprintf(yol, "%s/%s", hedef_dizin, dosya_adi);
+        }
+        else
+        {
+            sprintf(yol, "%s", dosya_adi);
+        }
+
+        FILE *cikis = fopen(yol, "wb");
+
+        if(cikis == NULL)
+        {
+            parca = strtok(NULL, "|");
+            continue;
+        }
+
+        // dosya verisinin konumuna git
+        fseek(arsiv, 10 + metadata_boyut + konum, SEEK_SET);
+
+        for(long i = 0; i < boyut; i++)
+        {
+            int ch = fgetc(arsiv);
+
+            if(ch == EOF)
+            {
+                break;
+            }
+
+            fputc(ch, cikis);
+        }
+
+        fclose(cikis);
+
+        chmod(yol, izin);
+
+        parca = strtok(NULL, "|");
+    }
+
+    free(metadata);
+
+    fclose(arsiv);
+
+    printf("Dosyalar acildi.\n");
 }
