@@ -133,11 +133,8 @@ int main(int argc, char *argv[])
         char *arsiv_dosya = argv[2];
         char *hedef_dizin = NULL;
 
-        if(argc >= 3)
-        {
-            printf("Arsiv dosyasi: %s\n", argv[2]);
-        }
-
+        printf("Arsiv dosyasi: %s\n", arsiv_dosya);
+ 
         if(argc >= 4)
         {
             hedef_dizin = argv[3];
@@ -145,8 +142,9 @@ int main(int argc, char *argv[])
         }
         else
         {
-            printf("Hedef dizin girilmesi, mevcut dizine aciliyor...\n");
+            printf("Hedef dizin girilmedi, mevcut dizine aciliyor...\n");
         }
+        arsiv_ac(arsiv_dosya, hedef_dizin);    
     }
 
     else
