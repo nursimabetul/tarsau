@@ -20,7 +20,6 @@ typedef struct
     char dosya_adi[256];
     long boyut;
     int izin;
-    long dosya_konumu;
 } DosyaBilgisi;
 
 
@@ -222,9 +221,7 @@ void arsiv_olustur(int dosya_sayisi, char *dosyalar[], char *arsiv_adi)
 
     DosyaBilgisi dosya_bilgisi[MAX_DOSYA_SAYISI];
     char metadata[16384] = ""; // Taşma (Buffer Overflow) riskini önlemek için 16KB
-    long konum = 0;
     
-
     for(int i = 0; i < dosya_sayisi; i++)
     {
         long boyut = dosya_boyutu_al(dosyalar[i]);
@@ -234,27 +231,26 @@ void arsiv_olustur(int dosya_sayisi, char *dosyalar[], char *arsiv_adi)
         strcpy(dosya_bilgisi[i].dosya_adi, dosyalar[i]);
         dosya_bilgisi[i].boyut = boyut;
         dosya_bilgisi[i].izin = izin;
-        dosya_bilgisi[i].dosya_konumu = konum;
-        konum += boyut;
-
+        
         char temp[512];
-
+        
         sprintf(temp,
-                "|%s,%o,%ld,%ld|",
+                "|%s,%o,%ld|",  //  |Dosya adı, izinler, boyut|
                 dosya_bilgisi[i].dosya_adi,
                 dosya_bilgisi[i].izin,
-                dosya_bilgisi[i].boyut,
-                dosya_bilgisi[i].dosya_konumu);
+                dosya_bilgisi[i].boyut
+                );
 
         strncat(metadata, temp, sizeof(metadata) - strlen(metadata) - 1);
     }
 
     long metadata_boyut = strlen(metadata);
-
-    fprintf(arsiv, "%010ld", metadata_boyut);
+    
+    fprintf(arsiv, "%010ld", metadata_boyut);// İlk 10 bayt ASCII formatında metadata boyutu
 
     fwrite(metadata, 1, metadata_boyut, arsiv);
 
+    // Dosya içeriklerini ardışık olarak yaz
     for(int i = 0; i < dosya_sayisi; i++)
     {
         FILE *fp = fopen(dosyalar[i], "rb");
@@ -290,7 +286,7 @@ void arsiv_ac(const char *arsiv_adi, const char *hedef_dizin)
 {
     FILE *arsiv = fopen(arsiv_adi, "rb");
 
-    // kontrol edilecek*********************
+    
     if(arsiv == NULL)
     {
         printf("Arsiv dosyasi uygunsuz veya bozuk!\n");
@@ -355,14 +351,13 @@ void arsiv_ac(const char *arsiv_adi, const char *hedef_dizin)
         char dosya_adi[256];
         int izin;
         long boyut;
-        long konum;
+
 
         if(sscanf(parca,
-                  "%255[^,],%o,%ld,%ld",
+                  "%255[^,],%o,%ld",
                   dosya_adi,
                   &izin,
-                  &boyut,
-                  &konum) != 4)
+                  &boyut) != 3)
         {
             printf("Arsiv dosyasi uygunsuz veya bozuk!\n");
 
@@ -389,9 +384,6 @@ void arsiv_ac(const char *arsiv_adi, const char *hedef_dizin)
             parca = strtok(NULL, "|");
             continue;
         }
-
-        // dosya verisinin konumuna git
-        fseek(arsiv, 10 + metadata_boyut + konum, SEEK_SET);
 
         for(long i = 0; i < boyut; i++)
         {
