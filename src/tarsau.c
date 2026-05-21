@@ -58,6 +58,7 @@ int main(int argc, char *argv[])
         {
             if(strcmp(argv[i], "-o") == 0)
             {
+                i++; // -o'dan sonra gelen arşiv adını atla
                 break;
             }
 
@@ -102,6 +103,7 @@ int main(int argc, char *argv[])
             else
             {
                 printf("  %s bulunamadi!\n", dosyalar[i]);
+                return 1; // -> Eksik dosya varsa program sorunsuz hata verip çık
             }
         }
 
@@ -219,8 +221,7 @@ void arsiv_olustur(int dosya_sayisi, char *dosyalar[], char *arsiv_adi)
     }
 
     DosyaBilgisi dosya_bilgisi[MAX_DOSYA_SAYISI];
-    char metadata[4096] = "";
-    
+    char metadata[16384] = ""; // Taşma (Buffer Overflow) riskini önlemek için 16KB
     long konum = 0;
     
 
