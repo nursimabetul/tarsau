@@ -170,7 +170,10 @@ int ascii_kontrol(const char *dosya_adi)// Dosya türü text ise 1 değilse 0 d�
 
     while((ch = fgetc(fp)) != EOF)
     {
-        if(ch > 127)
+        if((ch < 32 || ch > 126) &&
+            ch != '\n' &&
+            ch != '\r' &&
+            ch != '\t')
         {
             fclose(fp);
             return 0;
