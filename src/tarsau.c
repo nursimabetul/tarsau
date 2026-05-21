@@ -131,6 +131,12 @@ int main(int argc, char *argv[])
             return 1;
         }
         
+        if(argc > 4)
+        {
+            printf("Fazla parametre girdiniz!\n");
+            return 1;
+        }
+        
         char *arsiv_dosya = argv[2];
         char *hedef_dizin = NULL;
 
@@ -223,7 +229,7 @@ void arsiv_olustur(int dosya_sayisi, char *dosyalar[], char *arsiv_adi)
     }
 
     DosyaBilgisi dosya_bilgisi[MAX_DOSYA_SAYISI];
-    char metadata[16384] = ""; // Taşma (Buffer Overflow) riskini önlemek için 16KB
+    char metadata[16384] = "|"; // Taşma (Buffer Overflow) riskini önlemek için 16KB
     
     for(int i = 0; i < dosya_sayisi; i++)
     {
@@ -238,7 +244,7 @@ void arsiv_olustur(int dosya_sayisi, char *dosyalar[], char *arsiv_adi)
         char temp[512];
         
         sprintf(temp,
-                "|%s,%o,%ld|",  //  |Dosya adı, izinler, boyut|
+                "%s,%o,%ld|",  //  |Dosya adı, izinler, boyut|
                 dosya_bilgisi[i].dosya_adi,
                 dosya_bilgisi[i].izin,
                 dosya_bilgisi[i].boyut
@@ -336,8 +342,14 @@ void arsiv_ac(const char *arsiv_adi, const char *hedef_dizin)
         return;
     }
 
-    fread(metadata, 1, metadata_boyut, arsiv);
+    if(fread(metadata, 1, metadata_boyut, arsiv) != metadata_boyut)
+    {
+        printf("Arsiv dosyasi uygunsuz veya bozuk!\n");
 
+        free(metadata);
+        fclose(arsiv);
+        return;
+    }
     metadata[metadata_boyut] = '\0';
 
     // dizin olustur
