@@ -15,6 +15,7 @@ int dosya_izin_oku(const char *dosya_adi);
 void arsiv_olustur(int dosya_sayisi, char *dosyalar[], char *arsiv_adi);
 void arsiv_ac(const char *arsiv_adi, const char *hedef_dizin);
 void dizin_olustur(const char *yol);
+int dosya_var_mi(const char *dosya_adi);
 
 typedef struct
 {
@@ -83,7 +84,7 @@ int main(int argc, char *argv[])
 
         for(int i = 0; i < dosya_sayisi; i++)
         {
-            if(access(dosyalar[i], F_OK) == 0)
+            if(dosya_var_mi(dosyalar[i]) == 1)
             {
                 printf("  %s bulundu.\n", dosyalar[i]);
 
@@ -242,20 +243,20 @@ void arsiv_olustur(int dosya_sayisi, char *dosyalar[], char *arsiv_adi)
         long boyut = dosya_boyutu_al(dosyalar[i]);
         int izin = dosya_izin_oku(dosyalar[i]);
         
-        
-        strcpy(dosya_bilgisi[i].dosya_adi, dosyalar[i]);
+        strncpy(dosya_bilgisi[i].dosya_adi, dosyalar[i], sizeof(dosya_bilgisi[i].dosya_adi) - 1); // taşma kontrolü 
+        dosya_bilgisi[i].dosya_adi[255] = '\0';                                                   // derleme hatası için 
         dosya_bilgisi[i].boyut = boyut;
         dosya_bilgisi[i].izin = izin;
         
         char temp[512];
         
-        sprintf(temp,
-                "%s,%o,%ld|",  //  |Dosya adı, izinler, boyut|
+        snprintf(temp,sizeof(temp),
+                "%.200s,%o,%ld|",  //  |Dosya adı, izinler, boyut|
                 dosya_bilgisi[i].dosya_adi,
                 dosya_bilgisi[i].izin,
                 dosya_bilgisi[i].boyut
                 );
-
+              
         strncat(metadata, temp, sizeof(metadata) - strlen(metadata) - 1);
     }
 
@@ -348,7 +349,7 @@ void arsiv_ac(const char *arsiv_adi, const char *hedef_dizin)
         return;
     }
 
-    if(fread(metadata, 1, metadata_boyut, arsiv) != metadata_boyut)
+    if (fread(metadata, 1, metadata_boyut, arsiv) != (size_t)metadata_boyut) //size_t ve long int karşılaştırması
     {
         printf("Arsiv dosyasi uygunsuz veya bozuk!\n");
 
@@ -403,6 +404,7 @@ void arsiv_ac(const char *arsiv_adi, const char *hedef_dizin)
 
         if(cikis == NULL)
         {
+            fseek(arsiv, boyut, SEEK_CUR); // o dosyanın byte'larını atla
             parca = strtok(NULL, "|");
             continue;
         }
