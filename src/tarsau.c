@@ -45,6 +45,7 @@ int main(int argc, char *argv[])
             if(strcmp(argv[i], "-o") == 0 && i + 1 < argc)
             {
                 arsiv_dosya = argv[i + 1];
+                break;
             }
         }
 
@@ -59,7 +60,7 @@ int main(int argc, char *argv[])
             if(strcmp(argv[i], "-o") == 0)
             {
                 i++; // -o'dan sonra gelen arşiv adını atla
-                break;
+                continue; //döngüye devam et
             }
 
            if(dosya_sayisi >= MAX_DOSYA_SAYISI)
@@ -70,8 +71,12 @@ int main(int argc, char *argv[])
             dosyalar[dosya_sayisi] = argv[i];
             dosya_sayisi++;
         }
-        
- 
+              
+       if(dosya_sayisi == 0)
+       {
+          printf("Arşivlenecek dosya isimleri belirtilmedi.\n");
+          return 1;
+       }
 
         printf("Birlestirilecek Dosyalar:\n");
         long toplam_boyut = 0;
