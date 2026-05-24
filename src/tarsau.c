@@ -14,6 +14,7 @@ long dosya_boyutu_al(const char *dosya_adi);
 int dosya_izin_oku(const char *dosya_adi);
 void arsiv_olustur(int dosya_sayisi, char *dosyalar[], char *arsiv_adi);
 void arsiv_ac(const char *arsiv_adi, const char *hedef_dizin);
+void dizin_olustur(const char *yol);
 
 typedef struct
 {
@@ -355,7 +356,8 @@ void arsiv_ac(const char *arsiv_adi, const char *hedef_dizin)
     // dizin olustur
     if(hedef_dizin != NULL)
     {
-        mkdir(hedef_dizin, 0755);
+        //mkdir(hedef_dizin, 0755);
+        dizin_olustur(hedef_dizin);// ic ice dizin yazildiğinda
     }
 
     // metadata ayristirma
@@ -424,4 +426,22 @@ void arsiv_ac(const char *arsiv_adi, const char *hedef_dizin)
     fclose(arsiv);
 
     printf("Dosyalar acildi.\n");
+}
+
+void dizin_olustur(const char *yol)
+{
+    char tmp[512];
+    snprintf(tmp, sizeof(tmp), "%s", yol);
+
+    for (char *p = tmp + 1; *p; p++)
+    {
+        if (*p == '/')
+        {
+            *p = '\0';
+            mkdir(tmp, 0755);
+            *p = '/';
+        }
+    }
+
+    mkdir(tmp, 0755);
 }
