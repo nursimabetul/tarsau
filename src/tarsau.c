@@ -300,6 +300,7 @@ int dosya_var_mi(const char *dosya_adi)
 
 void arsiv_ac(const char *arsiv_adi, const char *hedef_dizin)
 {
+    char acilan_dosyalar[4096] = "";
     FILE *arsiv = fopen(arsiv_adi, "rb");
 
     
@@ -422,7 +423,9 @@ void arsiv_ac(const char *arsiv_adi, const char *hedef_dizin)
         }
 
         fclose(cikis);
-
+        if (strlen(acilan_dosyalar) > 0)
+          strncat(acilan_dosyalar, ", ", sizeof(acilan_dosyalar) - strlen(acilan_dosyalar) - 1);
+        strncat(acilan_dosyalar, dosya_adi, sizeof(acilan_dosyalar) - strlen(acilan_dosyalar) - 1);
         chmod(yol, izin);
 
         parca = strtok(NULL, "|");
@@ -432,7 +435,11 @@ void arsiv_ac(const char *arsiv_adi, const char *hedef_dizin)
 
     fclose(arsiv);
 
-    printf("Dosyalar acildi.\n");
+    if (hedef_dizin != NULL)
+        printf("%s dizininde %s dosyalari acildi.\n", hedef_dizin, acilan_dosyalar);
+    else
+        printf("Mevcut dizinde %s dosyalari acildi.\n", acilan_dosyalar);
+
 }
 
 void dizin_olustur(const char *yol)
